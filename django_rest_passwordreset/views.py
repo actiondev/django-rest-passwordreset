@@ -94,12 +94,12 @@ class ResetPasswordRequestToken(GenericAPIView):
     """
     throttle_classes = ()
     permission_classes = ()
-    serializer_class = EmailSerializer
+    serializer_class = EmailPhoneSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        email = serializer.validated_data['email']
+        email_or_phone = serializer.validated_data['email_or_phone']
 
         # before we continue, delete all existing expired tokens
         password_reset_token_validation_time = get_password_reset_token_expiry_time()
@@ -111,8 +111,10 @@ class ResetPasswordRequestToken(GenericAPIView):
         clear_expired(now_minus_expiry_time)
 
         # find a user by email address (case insensitive search)
-        users = User.objects.filter(**{'{}__iexact'.format(get_password_reset_lookup_field()): email})
-
+        users = User.objects.filter(**{'{}__iexact'.format(get_password_reset_lookup_field()): email_or_phone})
+        if not users:
+            users = User.objects.filter(phone=email_or_phone)
+            
         active_user_found = False
 
         # iterate over all users and check if there is any user that is active
@@ -127,7 +129,7 @@ class ResetPasswordRequestToken(GenericAPIView):
         if not active_user_found and not getattr(settings, 'DJANGO_REST_PASSWORDRESET_NO_INFORMATION_LEAKAGE', False):
             raise exceptions.ValidationError({
                 'email': [_(
-                    "We couldn't find an account associated with that email. Please try a different e-mail address.")],
+                    "Не удается найти аккаунт привязанный к этой почте или телефону. Попробуйте изменить адрес электронной почты или телефон.")],
             })
 
         # last but not least: iterate over all users that are active and can change their password

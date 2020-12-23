@@ -11,14 +11,14 @@ from django_rest_passwordreset.models import get_password_reset_token_expiry_tim
 from . import models
 
 __all__ = [
-    'EmailSerializer',
+    'EmailPhoneSerializer',
     'PasswordTokenSerializer',
     'ResetTokenSerializer',
 ]
 
 
-class EmailSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+class EmailPhoneSerializer(serializers.Serializer):
+    email_or_phone = serializers.CharField()
 
 
 class PasswordValidateMixin:
